@@ -6086,7 +6086,7 @@ struct mg_str *mg_get_http_header(struct http_message *hm, const char *name) {
 static void mg_http_transfer_file_data(struct mg_connection *nc) {
   struct mg_http_proto_data *pd = mg_http_get_proto_data(nc);
   char buf[MG_MAX_HTTP_SEND_MBUF];
-  size_t n = 0, to_read = 0, left = (size_t)(pd->file.cl - pd->file.sent);
+  uint64_t n = 0, to_read = 0, left = (pd->file.cl - pd->file.sent);
 
   if (pd->file.type == DATA_FILE) {
     struct mbuf *io = &nc->send_mbuf;
@@ -6115,8 +6115,8 @@ static void mg_http_transfer_file_data(struct mg_connection *nc) {
     }
   } else if (pd->file.type == DATA_PUT) {
     struct mbuf *io = &nc->recv_mbuf;
-    size_t to_write = left <= 0 ? 0 : left < io->len ? (size_t) left : io->len;
-    size_t n = mg_fwrite(io->buf, 1, to_write, pd->file.fp);
+    uint64_t to_write = left <= 0 ? 0 : left < io->len ? left : io->len;
+    uint64_t n = mg_fwrite(io->buf, 1, to_write, pd->file.fp);
     if (n > 0) {
       mbuf_remove(io, n);
       pd->file.sent += n;
@@ -7075,11 +7075,11 @@ void mg_http_serve_file(struct mg_connection *nc, struct http_message *hm,
               "Accept-Ranges: bytes\r\n"
               "Content-Type: %.*s\r\n"
               "Connection: %s\r\n"
-              "Content-Length: %" SIZE_T_FMT
+              "Content-Length: %" INT64_FMT
               "\r\n"
               "%sEtag: %s\r\n\r\n",
               current_time, last_modified, (int) mime_type.len, mime_type.p,
-              (pd->file.keepalive ? "keep-alive" : "close"), (size_t) cl, range,
+              (pd->file.keepalive ? "keep-alive" : "close"), (int64_t) cl, range,
               etag);
 
     pd->file.cl = cl;
